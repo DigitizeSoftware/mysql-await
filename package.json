@@ -1,0 +1,26 @@
+{
+  "name": "mysql-await",
+  "version": "0.1.0",
+  "description": "A wrapper over [mysqljs/mysql](https://github.com/mysqljs/mysql) module that mimics the same API as the original one but takes advantage of promises.",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "rimraf ./lib && tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DigitizeSoftware/mysql-await.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DigitizeSoftware/mysql-await/issues"
+  },
+  "homepage": "https://github.com/DigitizeSoftware/mysql-await#readme",
+  "devDependencies": {
+    "@types/node": "^18.11.12",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.9.4"
+  }
+}
