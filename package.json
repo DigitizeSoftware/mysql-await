@@ -1,6 +1,6 @@
 {
   "name": "@digitize/mysql-await",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A wrapper over [mysqljs/mysql](https://github.com/mysqljs/mysql) module that mimics the same API as the original one but takes advantage of promises.",
   "main": "index.js",
   "scripts": {
