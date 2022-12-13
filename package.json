@@ -2,9 +2,9 @@
   "name": "@digitize/mysql-await",
   "version": "0.1.0",
   "description": "A wrapper over [mysqljs/mysql](https://github.com/mysqljs/mysql) module that mimics the same API as the original one but takes advantage of promises.",
-  "main": "lib/index.js",
+  "main": "index.js",
   "scripts": {
-    "build": "rimraf ./lib && tsc",
+    "build": "rimraf ./dist && tsc && cp ./package*.json ./dist/ && cp ./README.md ./dist/ && cp ./LICENSE ./dist/ && cp ./tsconfig.json ./dist/",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
