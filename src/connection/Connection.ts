@@ -7,6 +7,7 @@ export {ConnectionConfig};
 export type ConnectionOptions = string | ConnectionConfig;
 
 export type TransactionContext = {
+    connection: Connection;
     rollback: () => Promise<void>;
 }
 
@@ -58,7 +59,10 @@ export class Connection<T extends mysql.Connection = mysql.Connection> extends Q
     async transaction<V>(fn: (ctx: TransactionContext) => Promise<V>): Promise<V> {
         await this.beginTransaction();
         try {
-            const result = await fn({rollback: async () => await this.rollback()});
+            const result = await fn({
+                connection: this,
+                rollback: async () => await this.rollback()
+            });
             if (!this.inTransaction) {
                 await this.commit();
             }
