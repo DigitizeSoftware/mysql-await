@@ -1,32 +1,25 @@
-import {
-    ConnectionConfig,
-    createConnection,
-    Connection as MysqlConnection,
-    QueryOptions,
-    MysqlError,
-    FieldInfo
-} from "mysql";
-import { format } from "../format/format";
+import mysql, {ConnectionConfig} from "mysql";
+import {Queryable} from "../query/Queryable";
+import {callbackToPromise} from "../util/callbackToPromise";
 
-export {FieldInfo} from "mysql";
+export {ConnectionConfig};
 
-export type ConnectionArg = string | ConnectionConfig;
+export type ConnectionOptions = string | ConnectionConfig;
 
-export interface QueryResult<T = any> {
-    results?: T;
-    fields?: FieldInfo[];
+export type TransactionContext = {
+    rollback: () => Promise<void>;
 }
 
-export class Connection {
-    private mysqlCon: MysqlConnection;
+export class Connection<T extends mysql.Connection = mysql.Connection> extends Queryable {
+    private inTransaction = false;
 
-    constructor(options: ConnectionArg) {
-        this.mysqlCon = createConnection(options);
+    constructor(protected mysqlConnection: T) {
+        super(mysqlConnection);
     }
 
     connect(): Promise<void> {
         return new Promise<void>((res, rej) => {
-            this.mysqlCon.connect((err) => {
+            this.mysqlConnection.connect((err) => {
                 if (err) {
                     rej(err);
                 }
@@ -37,26 +30,9 @@ export class Connection {
         });
     }
 
-    query<T = any>(options: string | QueryOptions, values?: any): Promise<QueryResult<T>> ;
-    query<T = any>(...args: [string | QueryOptions, any?]): Promise<QueryResult<T>> {
-        if (typeof args[0] === "string") {
-            console.log(format(args[0], args[1]));
-        }
-        return new Promise((res, rej) => {
-            this.mysqlCon.query(...args, (err: MysqlError | null, results?: any, fields?: FieldInfo[]) => {
-                if (err) {
-                    rej(err);
-                }
-                else {
-                    res({results, fields});
-                }
-            });
-        });
-    }
-
     end(): Promise<void> {
         return new Promise((res, rej) => {
-            this.mysqlCon.end((err) => {
+            this.mysqlConnection.end((err) => {
                 if (err) {
                     rej(err);
                 }
@@ -68,14 +44,56 @@ export class Connection {
     }
 
     destroy() {
-        this.mysqlCon.destroy();
+        this.mysqlConnection.destroy();
     }
 
     pause() {
-        this.mysqlCon.pause();
+        this.mysqlConnection.pause();
     }
 
     resume() {
-        this.mysqlCon.resume();
+        this.mysqlConnection.resume();
+    }
+
+    async transaction<V>(fn: (ctx: TransactionContext) => Promise<V>): Promise<V> {
+        await this.beginTransaction();
+        try {
+            const result = await fn({rollback: async () => await this.rollback()});
+            if (!this.inTransaction) {
+                await this.commit();
+            }
+            return result;
+        }
+        catch (err) {
+            await this.rollback();
+            throw err;
+        }
+    }
+
+    async beginTransaction(): Promise<void> {
+        await new Promise<void>((res, rej) => {
+            this.mysqlConnection.beginTransaction(callbackToPromise(res, rej));
+        });
+        this.inTransaction = true;
+    }
+
+    async commit(): Promise<void> {
+        if (!this.inTransaction) {
+            throw new Error('no transaction to commit');
+        }
+        await new Promise<void>((res, rej) => {
+            this.mysqlConnection.commit(callbackToPromise(res, rej));
+        });
+        this.inTransaction = false;
+    }
+
+    async rollback(): Promise<void> {
+        if (!this.inTransaction) {
+            throw new Error('no transaction to rollback');
+        }
+        await new Promise<void>((res, rej) => {
+            this.mysqlConnection.rollback(callbackToPromise(res, rej));
+        });
+        this.inTransaction = false;
     }
 }
